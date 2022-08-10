@@ -1,0 +1,4 @@
+Django
+django-rest-framework
+djangorestframework-simplejwt
+psycopg2
