@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 from .models import Questions
 from .serializers import CreateQuestionSerializer, ListQuestionSerializer
@@ -29,10 +29,26 @@ class CreateListQuestion(ListCreateAPIView):
             return CreateQuestionSerializer
         return ListQuestionSerializer
     
-class RetrieveQuestion(RetrieveAPIView):
+class RetrieveQuestion(RetrieveUpdateAPIView):
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
-    serializer_class = ListQuestionSerializer
+
+    def get(self, request, *args, **kwargs):
+        try:
+            return self.retrieve(request, *args, **kwargs)
+        except ValueError as e:
+            return Response({'message':str(e)}, status=400)
+
+    def put(self, request, *args, **kwargs):
+        try:
+            return self.update(request, *args, **kwargs)
+        except ValueError as e:
+            return Response({'message':str(e)}, status=400)
+
+    def get_serializer_class(self, *args):
+        if self.request.method == 'PUT':
+            return CreateQuestionSerializer
+        return ListQuestionSerializer
     
     def get_object(self):
         question_id = self.kwargs[self.lookup_field]
@@ -41,11 +57,10 @@ class RetrieveQuestion(RetrieveAPIView):
             raise ValueError('Invalid question id')
         return instance
     
-    def get(self, request, *args, **kwargs):
-        try:
-            return self.retrieve(request, *args, **kwargs)
-        except ValueError as e:
-            return Response({'message':str(e)}, status=400)
+        
+    # def update(self, request, *args, **kwargs):
+        
+    #     return super().update(request, *args, **kwargs)
     
     
     
