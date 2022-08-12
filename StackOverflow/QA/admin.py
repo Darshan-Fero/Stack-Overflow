@@ -1,7 +1,14 @@
 from django.contrib import admin
-from .models import Questions, Answers
+from .models import Questions, Answers, Tags
 
 # Register your models here.
 
-admin.site.register(Questions)
+class QuestionAdmin(admin.ModelAdmin):
+    fields= ('created', 'updated', 'author', 'title', 'body', 'tag', 'vote')
+    readonly_fields= ("created", 'updated')
+    list_display= ('title', 'body', 'created', 'updated')
+
+
+admin.site.register(Tags)
+admin.site.register(Questions, QuestionAdmin)
 admin.site.register(Answers)
