@@ -1,6 +1,7 @@
 from django.urls import path
-from .apis import CreateQuestion
+from .apis import CreateListQuestion, RetrieveQuestion
 
 urlpatterns = [
-    path('question', CreateQuestion.as_view())
+    path('question', CreateListQuestion.as_view()),
+    path('question/<int:pk>', RetrieveQuestion.as_view())
 ]

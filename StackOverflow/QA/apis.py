@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from .models import Questions
 from .serializers import CreateQuestionSerializer, ListQuestionSerializer
@@ -11,7 +11,7 @@ class BaseLimitOffsetPagination(LimitOffsetPagination):
     default_limit = 20
     max_limit = 100
 
-class CreateQuestion(ListCreateAPIView):
+class CreateListQuestion(ListCreateAPIView):
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
     queryset = Questions.objects.all()
@@ -28,4 +28,25 @@ class CreateQuestion(ListCreateAPIView):
         if self.request.method == 'POST':
             return CreateQuestionSerializer
         return ListQuestionSerializer
+    
+class RetrieveQuestion(RetrieveAPIView):
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ListQuestionSerializer
+    
+    def get_object(self):
+        question_id = self.kwargs[self.lookup_field]
+        instance = Questions.objects.filter(pk=question_id).first()
+        if not instance:
+            raise ValueError('Invalid question id')
+        return instance
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            return self.retrieve(request, *args, **kwargs)
+        except ValueError as e:
+            return Response({'message':str(e)}, status=400)
+    
+    
+    
     
