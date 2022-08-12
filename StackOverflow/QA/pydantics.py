@@ -1,5 +1,5 @@
 import re
-from QA.models import Answers, Questions
+from QA.models import Answers, Questions, Tags
 from pydantic import BaseModel, validator, ValidationError
 from django.contrib.auth.models import User
 from enum import Enum
@@ -26,4 +26,7 @@ class QuestionValidation(BaseModel):
     def check_tag(cls, v):
         if not v:
             raise ValueError("Blank not allowed")
+        v = Tags.objects.filter(name=v).first()
+        if not v:
+            raise ValueError("Invalid Tag")
         return v
