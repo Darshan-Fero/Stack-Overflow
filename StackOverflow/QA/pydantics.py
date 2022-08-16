@@ -48,3 +48,12 @@ class AnswerValidation(BaseModel):
         if not v:
             raise ValueError("Blank not allowed")
         return v
+
+class TagValidation(BaseModel):
+    name: str
+
+    @validator("name", pre=False)
+    def check_name(cls, v):
+        if not v:
+            raise ValueError("Blank not allowed")
+        return v
