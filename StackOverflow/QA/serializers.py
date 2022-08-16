@@ -1,5 +1,5 @@
 import zoneinfo
-from rest_framework.serializers import ModelSerializer, ValidationError, SerializerMethodField
+from rest_framework.serializers import Serializer, ModelSerializer, ValidationError, SerializerMethodField, HyperlinkedModelSerializer
 from user.utils import pydantic_validation
 from .models import Answers, Questions, Tags
 from .pydantics import QuestionValidation, AnswerValidation, TagValidation
@@ -12,6 +12,7 @@ class CreateQuestionSerializer(ModelSerializer):
     class Meta:
         model = Questions
         fields = (
+            'id',
             'author',
             'title',
             'body',
@@ -36,8 +37,8 @@ class CreateQuestionSerializer(ModelSerializer):
     
     def get_tag(self, obj):
         return obj.tag.name
-        
-        
+
+
 class ListQuestionSerializer(ModelSerializer):
     
     tag = SerializerMethodField()
@@ -45,7 +46,7 @@ class ListQuestionSerializer(ModelSerializer):
     updated = SerializerMethodField()
     class Meta:
         model = Questions
-        fields = "__all__"
+        fields = ('id', 'author', 'title', 'body', 'tag', 'vote', 'created', 'updated')
         
     def get_tag(self, obj):
         return obj.tag.name
@@ -111,3 +112,46 @@ class TagsSerializer(ModelSerializer):
         if not is_valid:
             raise ValidationError({'message':msg})
         return data
+
+
+class AnswerListSerializer(ModelSerializer):
+    
+    created = SerializerMethodField()
+    updated = SerializerMethodField()
+    class Meta:
+        model = Answers
+        fields = "__all__"
+        
+    def get_created(self, obj):
+        indian_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        datetime = {
+            "date":obj.updated.astimezone(indian_tz).strftime("%Y-%m-%d"),
+            "time":obj.updated.astimezone(indian_tz).strftime("%H:%M")
+        }
+        return datetime
+
+    def get_updated(self, obj):
+        indian_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        datetime = {
+            "date":obj.updated.astimezone(indian_tz).strftime("%Y-%m-%d"),
+            "time":obj.updated.astimezone(indian_tz).strftime("%H:%M")
+        }
+        return datetime
+
+class QuestionRelatedAnswersSerializer(Serializer):
+    
+    question = SerializerMethodField()
+    answers = SerializerMethodField()
+    
+    class Meta:
+        fields = [
+            'question',
+            'answers',
+        ]
+        
+    def get_question(self, obj):
+        return ListQuestionSerializer(obj).data
+    
+    def get_answers(self, obj):
+        queryset = Answers.objects.filter(question=obj).order_by('-vote')
+        return AnswerListSerializer(queryset, many=True).data
