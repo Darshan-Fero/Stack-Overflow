@@ -22,6 +22,14 @@ class CreateListQuestion(ListCreateAPIView):
             return CreateQuestionSerializer
         return ListQuestionSerializer
     
+    def get_queryset(self):
+        tag = self.request.GET.get('tag')
+        queryset = self.queryset
+        if tag:
+            tag = Tags.objects.filter(name__iexact=tag).first()
+            queryset = queryset.filter(tags=tag)
+        return queryset
+    
 class RetrieveQuestion(RetrieveUpdateAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
