@@ -1,14 +1,26 @@
-import re
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, validator
 from django.contrib.auth.models import User
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 class RegistrationValidation(BaseModel):
+    email: str
     username: str
     password: str
     first_name: str
     last_name: str
     
+    @validator("email", pre=False)
+    def check_email(cls, v):
+        if User.objects.filter(email=v).exists():
+            raise ValueError("email already exists")
+        try:
+            validate_email(v)
+        except ValidationError:
+            raise ValueError("Invalid email")
+        return v
+
     @validator("username", pre=False)
     def is_user_exists(cls, v):
         if len(v) < 4:

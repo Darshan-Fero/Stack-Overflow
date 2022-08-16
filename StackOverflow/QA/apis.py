@@ -1,7 +1,9 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.response import Response
+
+from user.tasks import test_func
 from .models import Questions, Tags
-from .serializers import CreateQuestionSerializer, ListQuestionSerializer
+from .serializers import CreateQuestionSerializer, ListQuestionSerializer, CreateAnswerSerializer
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -51,3 +53,7 @@ class RetrieveQuestion(RetrieveUpdateAPIView):
         return instance
 
     
+class CreateAnswer(CreateAPIView):
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CreateAnswerSerializer
