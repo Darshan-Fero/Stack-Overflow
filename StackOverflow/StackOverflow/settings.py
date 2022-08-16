@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'user',
     'QA',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -164,3 +165,14 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+# CELERY SETTINGS
+CELERY_BACKEND = 'redis://localhost:6379/3'
+CELERY_BROKER_URL = 'redis://localhost:6379/4'
+CELERY_RESULT_BACKEND = 'django-db'
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = 'Asia/Kolkata'

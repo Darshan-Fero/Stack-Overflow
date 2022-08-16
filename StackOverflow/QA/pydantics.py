@@ -30,3 +30,21 @@ class QuestionValidation(BaseModel):
         if not v:
             raise ValueError("Invalid Tag")
         return v
+
+class AnswerValidation(BaseModel):
+    question_id: int
+    body: str
+    
+    @validator("question_id", pre=False)
+    def check_question_id(cls, v):
+        if type(v)!=int and not str(v).isdecimal():
+            return ValueError("Invalid question id")
+        if not Questions.objects.filter(id=int(v)):
+            return ValueError("Invalid question id")
+        return v
+
+    @validator("body", pre=False)
+    def check_body(cls, v):
+        if not v:
+            raise ValueError("Blank not allowed")
+        return v
