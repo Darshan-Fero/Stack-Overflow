@@ -49,15 +49,18 @@ class CreateQuestionSerializer(ModelSerializer):
 
 class ListQuestionSerializer(ModelSerializer):
     
-    tag = SerializerMethodField()
+    tags = SerializerMethodField()
     created = SerializerMethodField()
     updated = SerializerMethodField()
     class Meta:
         model = Questions
-        fields = ('id', 'author', 'title', 'body', 'tag', 'vote', 'created', 'updated')
+        fields = ('id', 'author', 'title', 'body', 'tags', 'vote', 'created', 'updated')
         
-    def get_tag(self, obj):
-        return obj.tag.name
+    def get_tags(self, obj):
+        tag_list=[]
+        for i in obj.tags.get_queryset():
+            tag_list.append(i.name)
+        return tag_list
     
     def get_created(self, obj):
         indian_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
