@@ -8,7 +8,7 @@ from .tasks import sendEmail
 
 class CreateQuestionSerializer(ModelSerializer):
     
-    tag = SerializerMethodField()    
+    tags = SerializerMethodField()    
     class Meta:
         model = Questions
         fields = (
@@ -16,7 +16,7 @@ class CreateQuestionSerializer(ModelSerializer):
             'author',
             'title',
             'body',
-            'tag',
+            'tags',
         )
     def to_internal_value(self, data):
         return data
@@ -29,14 +29,22 @@ class CreateQuestionSerializer(ModelSerializer):
         
     def create(self, validated_data):
         request = self.context.get('request')
-        validated_data.update({'tag':Tags.objects.get(name=validated_data['tag'])})
+        tag_list = []
+        for tag in validated_data['tags']:
+            tag_list.append(Tags.objects.filter(name__iexact=tag).first())
+        validated_data.pop('tags')
         validated_data.update({'author':request.user})
         question = Questions(**validated_data)
         question.save()
+        question.tags.set(tag_list)
+        question.save()
         return question
     
-    def get_tag(self, obj):
-        return obj.tag.name
+    def get_tags(self, obj):
+        tag_list=[]
+        for i in obj.tags.get_queryset():
+            tag_list.append(i.name)
+        return tag_list
 
 
 class ListQuestionSerializer(ModelSerializer):
