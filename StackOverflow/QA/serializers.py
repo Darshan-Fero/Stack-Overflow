@@ -1,7 +1,8 @@
+import zoneinfo
 from rest_framework.serializers import ModelSerializer, ValidationError, SerializerMethodField
 from user.utils import pydantic_validation
 from .models import Answers, Questions, Tags
-from .pydantics import QuestionValidation, AnswerValidation
+from .pydantics import QuestionValidation, AnswerValidation, TagValidation
 from .tasks import sendEmail
 
 
@@ -40,12 +41,30 @@ class CreateQuestionSerializer(ModelSerializer):
 class ListQuestionSerializer(ModelSerializer):
     
     tag = SerializerMethodField()
+    created = SerializerMethodField()
+    updated = SerializerMethodField()
     class Meta:
         model = Questions
         fields = "__all__"
         
     def get_tag(self, obj):
         return obj.tag.name
+    
+    def get_created(self, obj):
+        indian_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        datetime = {
+            "date":obj.updated.astimezone(indian_tz).strftime("%Y-%m-%d"),
+            "time":obj.updated.astimezone(indian_tz).strftime("%H:%M")
+        }
+        return datetime
+
+    def get_updated(self, obj):
+        indian_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+        datetime = {
+            "date":obj.updated.astimezone(indian_tz).strftime("%Y-%m-%d"),
+            "time":obj.updated.astimezone(indian_tz).strftime("%H:%M")
+        }
+        return datetime
     
     
 class CreateAnswerSerializer(ModelSerializer):
@@ -77,3 +96,18 @@ class CreateAnswerSerializer(ModelSerializer):
         receiver = answer.question.author.email
         sendEmail.delay(sender=sender, receiver=receiver, message="")
         return answer
+    
+class TagsSerializer(ModelSerializer):
+    
+    class Meta:
+        model = Tags
+        fields = "__all__"
+        
+    def to_internal_value(self, data):
+        return data
+    
+    def validate(self, data):
+        is_valid, msg = pydantic_validation(TagValidation, data)
+        if not is_valid:
+            raise ValidationError({'message':msg})
+        return data
