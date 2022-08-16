@@ -1,4 +1,5 @@
 from time import timezone
+from xml.dom import ValidationErr
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -12,7 +13,7 @@ class TimeStampsModel(models.Model):
 
 class Tags(models.Model):
     
-    name = models.CharField(null=True, blank=True, max_length=100)
+    name = models.CharField(null=True, blank=True, max_length=100, unique=True)
     
     class Meta:
         app_label = 'QA'
@@ -21,14 +22,20 @@ class Tags(models.Model):
         
     def __str__(self):
         return self.name
-    
+
+    def save(self, *args, **kwargs):
+        is_exists = Tags.objects.filter(name__iexact=self.name)
+        if is_exists:
+            raise ValueError(str(self.name)+' tag already exists')
+        super(Tags, self).save(*args, **kwargs)
+
 
 class Questions(TimeStampsModel):
     
     author = models.ForeignKey(User, on_delete=models.PROTECT, null=True, blank=True)
     title = models.CharField(max_length=200, null=True, blank=True)
     body = models.TextField(null=True, blank=True)
-    tag = models.ForeignKey(Tags, related_name='questions_by_tag', related_query_name='questions_by_tag', on_delete=models.PROTECT)
+    tags = models.ManyToManyField(Tags, related_name='questions_by_tag', related_query_name='questions_by_tag')
     vote = models.IntegerField(default=0)
     
     class Meta:

@@ -4,11 +4,13 @@ from pydantic import BaseModel, validator, ValidationError
 from django.contrib.auth.models import User
 from enum import Enum
 
+class Tag(BaseModel):
+    tag:str
 
 class QuestionValidation(BaseModel):
     title: str
     body: str
-    tag: str
+    tags: list[str]
     
     @validator("title", pre=False)
     def check_title(cls, v):
@@ -22,14 +24,15 @@ class QuestionValidation(BaseModel):
             raise ValueError("Blank not allowed")
         return v
 
-    @validator("tag", pre=False)
-    def check_tag(cls, v):
-        if not v:
-            raise ValueError("Blank not allowed")
-        v = Tags.objects.filter(name=v).first()
-        if not v:
-            raise ValueError("Invalid Tag")
-        return v
+    @validator("tags", pre=False)
+    def check_tags(cls, tags):
+        for tag in tags:
+            if not tag:
+                raise ValueError("Blank not allowed")
+            v = Tags.objects.filter(name__iexact=tag).first()
+            if not v:
+                raise ValueError("'"+str(tag)+"' Invalid Tag")
+        return tags
 
 class AnswerValidation(BaseModel):
     question_id: int
