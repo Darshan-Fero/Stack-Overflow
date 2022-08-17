@@ -1,14 +1,19 @@
 import zoneinfo
-from rest_framework.serializers import Serializer, ModelSerializer, ValidationError, SerializerMethodField, HyperlinkedModelSerializer
+from rest_framework.serializers import Serializer, ListField, ModelSerializer, ValidationError, SerializerMethodField, HyperlinkedModelSerializer
 from user.utils import pydantic_validation
 from .models import Answers, AnswersVote, Questions, QuestionsVote, Tags
 from .pydantics import QuestionValidation, AnswerValidation, QuestionsVoteValidation, TagValidation
 from .tasks import sendEmail
 
+class TagSerializer(ModelSerializer):
+    class Meta:
+        model = Tags
+        fields= "__all__"
 
 class CreateQuestionSerializer(ModelSerializer):
     
-    tags = SerializerMethodField()    
+    tags = ListField(required=False, write_only=True)
+    assosiated_tags = SerializerMethodField()
     class Meta:
         model = Questions
         fields = (
@@ -16,7 +21,8 @@ class CreateQuestionSerializer(ModelSerializer):
             'author',
             'title',
             'body',
-            'tags',
+            'assosiated_tags',
+            'tags'
         )
     def to_internal_value(self, data):
         return data
@@ -40,11 +46,20 @@ class CreateQuestionSerializer(ModelSerializer):
         question.save()
         return question
     
-    def get_tags(self, obj):
-        tag_list=[]
-        for i in obj.tags.get_queryset():
-            tag_list.append(i.name)
-        return tag_list
+    def update(self, instance, validated_data):
+        if validated_data.get('tags'):
+            tag_list=[]
+            for tag in validated_data['tags']:
+                tag_list.append(Tags.objects.filter(name__iexact=tag).first())
+            instance.tags.set(tag_list)
+        instance.title = validated_data.get('title') or instance.title
+        instance.body = validated_data.get('body') or instance.body
+        instance.save()
+        return instance
+    
+    def get_assosiated_tags(self, obj):
+        tag_list=obj.tags.all()
+        return TagSerializer(tag_list, many=True).data
 
 
 class ListQuestionSerializer(ModelSerializer):
@@ -54,7 +69,7 @@ class ListQuestionSerializer(ModelSerializer):
     updated = SerializerMethodField()
     class Meta:
         model = Questions
-        fields = ('id', 'author', 'title', 'body', 'tags', 'vote', 'created', 'updated')
+        fields = ('id', 'slug', 'author', 'title', 'body', 'tags', 'vote', 'created', 'updated')
         
     def get_tags(self, obj):
         tag_list=[]

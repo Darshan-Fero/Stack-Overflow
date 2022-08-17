@@ -35,7 +35,18 @@ class CreateListQuestion(ListCreateAPIView):
             tag = Tags.objects.filter(name__iexact=tag).first()
             queryset = queryset.filter(tags=tag)
         return queryset
-    
+
+class RetrieveslugQuestion(RetrieveAPIView):
+    serializer_class = ListQuestionSerializer
+    queryset = Questions.objects.all()
+    lookup_field = 'slug'
+
+    def get(self, request, *args, **kwargs):
+        try:
+            return self.retrieve(request, *args, **kwargs)
+        except ValueError as e:
+            return Response({'message':str(e)}, status=400)
+
 class RetrieveQuestion(RetrieveUpdateAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -47,10 +58,10 @@ class RetrieveQuestion(RetrieveUpdateAPIView):
             return Response({'message':str(e)}, status=400)
 
     def put(self, request, *args, **kwargs):
-        try:
-            return self.update(request, *args, **kwargs)
-        except ValueError as e:
-            return Response({'message':str(e)}, status=400)
+        # try:
+        return self.update(request, *args, **kwargs)
+        # except ValueError as e:
+        #     return Response({'message':str(e)}, status=400)
 
     def get_serializer_class(self, *args):
         if self.request.method == 'PUT':

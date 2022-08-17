@@ -4,7 +4,7 @@ from .models import AnswersVote, Questions, Answers, QuestionsVote, Tags
 # Register your models here.
 
 class QuestionAdmin(admin.ModelAdmin):
-    fields= ('created', 'updated', 'author', 'title', 'body', 'tags', 'vote')
+    fields= ('created', 'updated', 'author', 'title', 'body', 'tags', 'vote', 'slug')
     readonly_fields= ("created", 'updated')
     list_display= ('title', 'body', 'created', 'updated')
     
