@@ -2,6 +2,9 @@ from time import timezone
 from xml.dom import ValidationErr
 from django.db import models
 from django.contrib.auth.models import User
+from django.urls import reverse
+from django.template.defaultfilters import slugify
+
 
 # Create your models here.
 
@@ -37,12 +40,20 @@ class Questions(TimeStampsModel):
     body = models.TextField(null=True, blank=True)
     tags = models.ManyToManyField(Tags, related_name='questions_by_tag', related_query_name='questions_by_tag')
     vote = models.IntegerField(default=0)
+    slug = models.SlugField(null=True, blank=True, unique=True)
     
     class Meta:
         app_label = 'QA'
         verbose_name = 'Questions'
         verbose_name_plural = 'Questions'
         
+    def save(self, *args, **kwargs):  # new
+        if not self.slug:
+            self.slug = slugify(self.title)
+        return super().save(*args, **kwargs)
+        
+    def get_absolute_url(self):
+        return reverse("question_detail", kwargs={"pk": self.slug})
         
     def __str__(self):
         return str(self.title)+'-'+str(self.id)
