@@ -1,8 +1,8 @@
 import zoneinfo
 from rest_framework.serializers import Serializer, ModelSerializer, ValidationError, SerializerMethodField, HyperlinkedModelSerializer
 from user.utils import pydantic_validation
-from .models import Answers, Questions, Tags
-from .pydantics import QuestionValidation, AnswerValidation, TagValidation
+from .models import Answers, AnswersVote, Questions, QuestionsVote, Tags
+from .pydantics import QuestionValidation, AnswerValidation, QuestionsVoteValidation, TagValidation
 from .tasks import sendEmail
 
 
@@ -166,3 +166,56 @@ class QuestionRelatedAnswersSerializer(Serializer):
     def get_answers(self, obj):
         queryset = Answers.objects.filter(question=obj).order_by('-vote')
         return AnswerListSerializer(queryset, many=True).data
+
+
+class VoteToQuestionSerializer(ModelSerializer):
+    
+    class Meta:
+        model = QuestionsVote
+        fields = ['user', 'vote']
+        
+    def to_internal_value(self, data):
+        return data
+    
+    def validate(self, data):
+        print(data)
+        is_valid, msg = pydantic_validation(QuestionsVoteValidation, data)
+        if not is_valid:
+            raise ValidationError({'message':msg})
+        return data
+    
+    def questionVote(self, validate_data):
+        question = Questions.objects.get(pk=int(validate_data.get('question')))
+        validate_data.update({'question':question})
+        instance = QuestionsVote.objects.filter(user=validate_data.get('user'), question=question).first()
+        if instance:
+            return self.update(instance, validate_data)
+        question_vote = QuestionsVote(**validate_data)
+        question_vote.save()
+        return question_vote
+    
+    def answerVote(self, validate_data):
+        answer = Answers.objects.get(pk=int(validate_data.get('answer')))
+        validate_data.update({'answer':answer})
+        instance = AnswersVote.objects.filter(user=validate_data.get('user'), answer=answer).first()
+        if instance:
+            return self.update(instance, validate_data)
+        question_vote = AnswersVote(**validate_data)
+        question_vote.save()
+        return question_vote
+    
+    def create(self, validate_data):
+        request = self.context.get('request')
+        validate_data.update({'user':request.user})
+        validate_data.update({'vote':str(validate_data['vote']).upper()})
+        if validate_data.get('question'):
+            return self.questionVote(validate_data)
+        else:
+            return self.answerVote(validate_data)
+
+    def update(self, instance, validate_data):
+        if instance.vote == validate_data.get('vote'):
+            return instance
+        instance.vote = validate_data.get('vote')
+        instance.save()
+        return instance

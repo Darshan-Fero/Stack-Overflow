@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 from QA.models import Answers, Questions, Tags
 from pydantic import BaseModel, validator, ValidationError
 from django.contrib.auth.models import User
@@ -59,4 +60,33 @@ class TagValidation(BaseModel):
     def check_name(cls, v):
         if not v:
             raise ValueError("Blank not allowed")
+        return v
+    
+class UpDownVote(str, Enum):
+    UP = "UP"
+    DOWN = "DOWN"
+    
+class QuestionsVoteValidation(BaseModel):
+    vote: UpDownVote
+    question: Optional[int]
+    answer: Optional[int]
+    
+    @validator("vote", pre=True)
+    def check_vote(cls, v):
+        if not v:
+            raise ValueError("Blank not allowed")
+        return str(v).upper()
+
+    @validator("question", pre=False)
+    def check_question(cls, v):
+        question = Questions.objects.filter(id=v).first()
+        if not question:
+            raise ValueError("Invalid question id")
+        return v
+
+    @validator("answer", pre=False)
+    def check_answer(cls, v):
+        answer = Answers.objects.filter(id=v).first()
+        if not answer:
+            raise ValueError("Invalid answer id")
         return v

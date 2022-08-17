@@ -1,11 +1,13 @@
 from rest_framework.generics import RetrieveAPIView, ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Questions, Tags
-from .serializers import CreateQuestionSerializer, ListQuestionSerializer, CreateAnswerSerializer, QuestionRelatedAnswersSerializer, TagsSerializer
+from .serializers import CreateQuestionSerializer, ListQuestionSerializer, CreateAnswerSerializer, QuestionRelatedAnswersSerializer, TagsSerializer, VoteToQuestionSerializer
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.authentication import TokenAuthentication
+from django.http import HttpResponseNotFound
 
 class BaseLimitOffsetPagination(LimitOffsetPagination):
     default_limit = 20
@@ -82,6 +84,8 @@ class TagsList(ListCreateAPIView):
     
     
 class QuestionRelatedAnswers(RetrieveAPIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = QuestionRelatedAnswersSerializer
     lookup_field = 'question_id'
     
@@ -97,3 +101,22 @@ class QuestionRelatedAnswers(RetrieveAPIView):
         if not instance:
             raise ValueError('Invalid question id')
         return instance
+    
+    
+class Votes(APIView):
+    '''
+    API to give Vote to questions and answer
+    '''
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request, qa, qa_id, *args, **kwargs):
+        if qa not in ['question', 'answer']:
+            return HttpResponseNotFound()
+        data = request.data
+        data.update({qa:qa_id})
+        serializer = VoteToQuestionSerializer(data=data, context={'request':request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        serializer.save()
+        return Response(data={})
