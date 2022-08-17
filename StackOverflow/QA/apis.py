@@ -24,7 +24,11 @@ class CreateListQuestion(ListCreateAPIView):
     
     def get_queryset(self):
         tag = self.request.GET.get('tag')
+        author_id = self.request.GET.get('author_id')
         queryset = self.queryset
+        if str(author_id).isdecimal():
+            author = User.objects.filter(pk=int(author_id)).first()
+            queryset = queryset.filter(author=author)
         if tag:
             tag = Tags.objects.filter(name__iexact=tag).first()
             queryset = queryset.filter(tags=tag)
