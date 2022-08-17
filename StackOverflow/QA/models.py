@@ -43,8 +43,9 @@ class Questions(TimeStampsModel):
         verbose_name = 'Questions'
         verbose_name_plural = 'Questions'
         
+        
     def __str__(self):
-        return str(self.title)
+        return str(self.title)+'-'+str(self.id)
 
 
 class Answers(TimeStampsModel):
@@ -61,7 +62,58 @@ class Answers(TimeStampsModel):
         verbose_name_plural = 'Answers'
         
     def __str__(self):
-        return str(self.question.title)
+        return str(self.question.title)+'-'+str(self.id)
+    
+VOTE_CHOICES = (
+        ('', '-----'),
+        ('UP', 'UP'),
+        ('DOWN', 'DOWN')
+    )
 
+class QuestionsVote(models.Model):
     
+    question = models.ForeignKey(Questions, related_name='votes', related_query_name='votes', on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    vote = models.CharField(max_length=50, choices=VOTE_CHOICES)
+
+    class Meta:
+        app_label = 'QA'
+        verbose_name = "Question's Votes"
+        verbose_name_plural = "Question's Votes"
+        unique_together = ('question', 'user',)
+        
+    def save(self, *args, **kwargs):
+        super(QuestionsVote, self).save(*args, **kwargs)
+        question = Questions.objects.get(pk=self.question.id)
+        up = len(QuestionsVote.objects.filter(vote='UP'))
+        down = len(QuestionsVote.objects.filter(vote='DOWN'))
+        question.vote = up-down
+        question.save()
+        
+        
+    def __str__(self):
+        return 'Question - '+str(self.question.title)+' - '+str(self.vote)
+
+
+class AnswersVote(models.Model):
     
+    answer = models.ForeignKey(Answers, related_name='votes', related_query_name='votes', on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    vote = models.CharField(max_length=50, choices=VOTE_CHOICES)
+
+    class Meta:
+        app_label = 'QA'
+        verbose_name = "Answer's Votes"
+        verbose_name_plural = "Answer's Votes"
+        unique_together = ('answer', 'user',)
+
+    def save(self, *args, **kwargs):
+        super(AnswersVote, self).save(*args, **kwargs)
+        answer = Answers.objects.get(pk=self.answer.id)
+        up = len(AnswersVote.objects.filter(vote='UP'))
+        down = len(AnswersVote.objects.filter(vote='DOWN'))
+        answer.vote = up-down
+        answer.save()
+        
+    def __str__(self):
+        return 'Answer - '+str(self.answer.question.title)+' - '+str(self.vote)

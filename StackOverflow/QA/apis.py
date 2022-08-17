@@ -1,4 +1,4 @@
-from rest_framework.generics import RetrieveAPIView, ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView, ListAPIView
+from rest_framework.generics import RetrieveAPIView, ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.response import Response
 from .models import Questions, Tags
 from .serializers import CreateQuestionSerializer, ListQuestionSerializer, CreateAnswerSerializer, QuestionRelatedAnswersSerializer, TagsSerializer
