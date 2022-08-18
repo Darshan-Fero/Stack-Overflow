@@ -2,8 +2,8 @@ from time import timezone
 from xml.dom import ValidationErr
 from django.db import models
 from django.contrib.auth.models import User
-from django.urls import reverse
 from django.template.defaultfilters import slugify
+from .tasks import sendEmail
 
 
 # Create your models here.
@@ -51,10 +51,7 @@ class Questions(TimeStampsModel):
         if not self.slug:
             self.slug = slugify(self.title)
         return super().save(*args, **kwargs)
-        
-    def get_absolute_url(self):
-        return reverse("question_detail", kwargs={"pk": self.slug})
-        
+
     def __str__(self):
         return str(self.title)+'-'+str(self.id)
 
@@ -71,6 +68,19 @@ class Answers(TimeStampsModel):
         app_label = 'QA'
         verbose_name = 'Answers'
         verbose_name_plural = 'Answers'
+        
+    def save(self, *args, **kwargs):
+        if not self.id and self.is_approved:
+            sender = self.question.author.email
+            receiever = self.author.email
+            sendEmail.delay(sender=sender, receiver=receiever)
+        if self.id and self.is_approved:
+            answer = Answers.objects.get(id=self.id)
+            if not answer.is_approved:
+                sender = self.question.author.email
+                receiever = self.author.email
+                sendEmail.delay(sender=sender, receiver=receiever)
+        super(Answers, self).save(*args, **kwargs)
         
     def __str__(self):
         return str(self.question.title)+'-'+str(self.id)

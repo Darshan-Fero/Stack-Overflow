@@ -1,7 +1,7 @@
 from rest_framework.generics import RetrieveAPIView, ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Questions, Tags
+from .models import Answers, Questions, Tags
 from .serializers import CreateQuestionSerializer, ListQuestionSerializer, CreateAnswerSerializer, QuestionRelatedAnswersSerializer, TagsSerializer, VoteToQuestionSerializer
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
@@ -37,44 +37,21 @@ class CreateListQuestion(ListCreateAPIView):
         return queryset
 
 class RetrieveslugQuestion(RetrieveAPIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = ListQuestionSerializer
     queryset = Questions.objects.all()
     lookup_field = 'slug'
 
-    def get(self, request, *args, **kwargs):
-        try:
-            return self.retrieve(request, *args, **kwargs)
-        except ValueError as e:
-            return Response({'message':str(e)}, status=400)
-
 class RetrieveQuestion(RetrieveUpdateAPIView):
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
-
-    def get(self, request, *args, **kwargs):
-        try:
-            return self.retrieve(request, *args, **kwargs)
-        except ValueError as e:
-            return Response({'message':str(e)}, status=400)
-
-    def put(self, request, *args, **kwargs):
-        # try:
-        return self.update(request, *args, **kwargs)
-        # except ValueError as e:
-        #     return Response({'message':str(e)}, status=400)
+    queryset = Questions.objects.all()
 
     def get_serializer_class(self, *args):
         if self.request.method == 'PUT':
             return CreateQuestionSerializer
         return ListQuestionSerializer
-    
-    def get_object(self):
-        question_id = self.kwargs[self.lookup_field]
-        instance = Questions.objects.filter(pk=question_id).first()
-        if not instance:
-            raise ValueError('Invalid question id')
-        return instance
-
     
 class CreateAnswer(CreateAPIView):
     authentication_classes = (TokenAuthentication,)
@@ -130,4 +107,19 @@ class Votes(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
         serializer.save()
+        return Response(data={})
+    
+class AcceptAnswer(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    
+    def post(self, request, pk, *args, **kwargs):
+        user = request.user
+        answer = Answers.objects.filter(pk=pk).first()
+        if not answer:
+            return Response(data={'message':'Invalid answer id'}, status=404)
+        if user != answer.question.author:
+            return Response(data={'message':'Invalid author'}, status=400)
+        answer.is_approved = True
+        answer.save()
         return Response(data={})
